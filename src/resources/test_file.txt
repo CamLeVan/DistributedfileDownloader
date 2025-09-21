@@ -1,0 +1,1 @@
+Chào bạn! Bây giờ là 08:28 AM +07 ngày thứ Bảy, 20 tháng 9 năm 2025. Dựa trên code tôi đã cung cấp cho dự án của bạn, tôi sẽ hướng dẫn chi tiết cách chạy và kiểm tra từng phần để đảm bảo hệ thống hoạt động đúng. Dưới đây là các bước thực hiện trong IntelliJ IDEA, với giả định bạn đã cấu hình dự án theo cấu trúc trước đó
