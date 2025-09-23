@@ -3,12 +3,15 @@ package com.example;
 import com.example.client.ConcurrentDownloadClient;
 import com.example.server.MultiThreadedServer;
 
+import java.io.IOException;
+import java.security.NoSuchAlgorithmException;
+
 public class Main {
-    public static void main(String[] args) {
-        if (args.length > 0 && "server".equals(args[0])) { // [Protocol Design, Step 1/2: Xử lý lệnh chạy server]
-            MultiThreadedServer.main(args); // [Multi-threading, Step 1/2: Chạy server đa luồng]
+    public static void main(String[] args) throws IOException, NoSuchAlgorithmException {
+        if (args.length > 0 && "server".equals(args[0])) {
+            MultiThreadedServer.main(args);
         } else {
-            ConcurrentDownloadClient.main(args); // [Multi-threading, Step 1/2: Chạy client đa luồng]
+            ConcurrentDownloadClient.main(args);
         }
     }
 }

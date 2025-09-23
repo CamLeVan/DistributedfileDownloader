@@ -2,70 +2,84 @@ package com.example.client;
 
 import com.example.DownloadGUI;
 import com.example.utils.FileUtils;
+import com.example.utils.ConfigLoader;
 
 import java.io.*;
 import java.net.*;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
 import java.util.concurrent.*;
 
 public class ConcurrentDownloadClient {
-    private static final String[] SERVERS = {"localhost:12345", "localhost:12346"};
     private static final String OUTPUT_FILE = "downloaded_file.txt";
-    private static final String EXPECTED_HASH = "3fad459e0dbaaea15a0845d18fbcc27fdb1ae83e64b6f2b4f78c12eae43f7a00";
 
-    public static void main(String[] args) {
-        long fileSize = getFileSizeFromServer();
-        if (fileSize <= 0) {
-            System.err.println("Failed to get file size or size is 0");
+    public static void downloadFile(String url) throws IOException, NoSuchAlgorithmException {
+        String[] servers = ConfigLoader.getServers();
+        if (servers.length == 0) {
+            System.err.println("No servers configured");
             return;
         }
-        System.out.println("Bắt đầu tải file với kích thước " + fileSize + " bytes từ " + SERVERS.length + " server");
+        String expectedHash = ConfigLoader.getExpectedHash();
 
-        long chunkSize = fileSize / SERVERS.length;
-        ExecutorService executor = Executors.newFixedThreadPool(SERVERS.length);
-        List<Future<byte[]>> futures = new ArrayList<>();
-
-        for (int i = 0; i < SERVERS.length; i++) {
-            String[] parts = SERVERS[i].split(":");
-            String host = parts[0];
-            int port = Integer.parseInt(parts[1]);
-            futures.add(executor.submit(new DownloadTask(host, port, i, chunkSize, fileSize)));
-            System.out.println("Gửi yêu cầu tải chunk " + i + " đến server " + SERVERS[i]);
+        long fileSize = getFileSizeFromServer(servers);
+        if (fileSize == -1) {
+            System.err.println("Failed to get file size from all servers");
+            return;
         }
 
-        try {
-            List<byte[]> chunks = new ArrayList<>();
-            for (int i = 0; i < futures.size(); i++) {
-                byte[] chunk = futures.get(i).get();
-                chunks.add(chunk);
-                System.out.println("Thread " + Thread.currentThread().getName() + ": Hoàn thành chunk " + i);
-            }
-            executor.shutdown();
+        DownloadGUI.log("Bắt đầu tải file với kích thước " + fileSize + " bytes từ " + servers.length + " server");
 
-            try (RandomAccessFile file = new RandomAccessFile(OUTPUT_FILE, "rw")) {
-                long position = 0;
-                for (byte[] chunk : chunks) {
-                    file.seek(position);
-                    file.write(chunk);
-                    position += chunk.length;
+        List<String> activeServers = new ArrayList<>(Arrays.asList(servers));
+        while (!activeServers.isEmpty()) {
+            long[] chunkSizes = calculateChunkSizes(fileSize, activeServers.size());
+            ExecutorService executor = Executors.newFixedThreadPool(activeServers.size());
+            List<Future<byte[]>> futures = new ArrayList<>();
+            List<Integer> chunkIndices = new ArrayList<>();
+
+            for (int i = 0; i < activeServers.size(); i++) {
+                String[] parts = activeServers.get(i).split(":");
+                String host = parts[0];
+                int port = Integer.parseInt(parts[1]);
+                chunkIndices.add(i);
+                futures.add(executor.submit(new DownloadTask(host, port, i, chunkSizes[i], fileSize)));
+            }
+
+            try {
+                for (int i = 0; i < futures.size(); i++) {
+                    try {
+                        byte[] chunk = futures.get(i).get();
+                        FileUtils.saveChunk(chunk, OUTPUT_FILE, calculateOffset(chunkIndices.get(i), chunkSizes));
+                    } catch (Exception e) {
+                        System.err.println("Chunk " + chunkIndices.get(i) + " failed: " + e.getMessage());
+                        activeServers.remove(i);
+                        i--; // Quay lại để xử lý lại index sau khi remove
+                        continue;
+                    }
+                }
+                executor.shutdown();
+                waitForCompletion(executor);
+                break; // Thoát nếu tất cả chunk tải thành công
+            } catch (Exception e) {
+                System.err.println("Download attempt failed, retrying with remaining servers: " + e.getMessage());
+                executor.shutdownNow();
+                if (activeServers.size() == 1) {
+                    System.err.println("No more servers available");
+                    return;
                 }
             }
+        }
 
-            String computedHash = FileUtils.calculateHash(OUTPUT_FILE, "SHA-256");
-            if (computedHash.equals(EXPECTED_HASH)) {
-                System.out.println("Download successful! File integrity verified.");
-                System.out.println("Ghép file hoàn tất, xác thực hash...");
-            } else {
-                System.out.println("Error: File integrity check failed. Hash mismatch. Expected: " + EXPECTED_HASH + ", Got: " + computedHash);
-            }
-            System.out.println("Download completed");
-        } catch (Exception e) {
-            System.err.println("Download error: " + e.getMessage());
+        String computedHash = FileUtils.calculateHash(OUTPUT_FILE, "SHA-256");
+        if (computedHash.equals(expectedHash)) {
+            System.out.println("Download successful! File integrity verified.");
+            DownloadGUI.log("Ghép file hoàn tất, xác thực hash...");
+        } else {
+            System.out.println("Error: File integrity check failed. Hash mismatch.");
         }
     }
 
-    private static long getFileSizeFromServer() {
-        for (String server : SERVERS) {
+    private static long getFileSizeFromServer(String[] servers) {
+        for (String server : servers) {
             String[] parts = server.split(":");
             String host = parts[0];
             int port = Integer.parseInt(parts[1]);
@@ -74,16 +88,45 @@ public class ConcurrentDownloadClient {
                  BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
                 out.println("GET_SIZE");
                 String sizeStr = in.readLine();
-                if (sizeStr != null && !sizeStr.isEmpty() && !sizeStr.startsWith("ERROR")) {
+                if (sizeStr != null && !sizeStr.isEmpty()) {
                     return Long.parseLong(sizeStr.trim());
-                } else if (sizeStr != null && sizeStr.startsWith("ERROR")) {
-                    System.err.println("Server error response from " + server + ": " + sizeStr);
                 }
-            } catch (IOException | NumberFormatException e) {
+            } catch (IOException e) {
                 System.err.println("Failed to get file size from " + server + ": " + e.getMessage());
             }
         }
-        System.err.println("Failed to get file size from all servers");
         return -1;
+    }
+
+    private static long[] calculateChunkSizes(long fileSize, int serverCount) {
+        long baseSize = fileSize / serverCount;
+        long remainder = fileSize % serverCount;
+        long[] chunkSizes = new long[serverCount];
+        for (int i = 0; i < serverCount; i++) {
+            chunkSizes[i] = baseSize + (i < remainder ? 1 : 0);
+        }
+        return chunkSizes;
+    }
+
+    private static long calculateOffset(int index, long[] chunkSizes) {
+        long offset = 0;
+        for (int i = 0; i < index; i++) {
+            offset += chunkSizes[i];
+        }
+        return offset;
+    }
+
+    private static void waitForCompletion(ExecutorService executor) {
+        try {
+            if (!executor.awaitTermination(60, TimeUnit.SECONDS)) {
+                executor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            executor.shutdownNow();
+        }
+    }
+
+    public static void main(String[] args) throws IOException, NoSuchAlgorithmException {
+        downloadFile("");
     }
 }

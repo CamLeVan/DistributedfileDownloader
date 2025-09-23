@@ -23,14 +23,15 @@ public class DownloadTask implements Callable<byte[]> {
 
     @Override
     public byte[] call() throws Exception {
-        DownloadGUI.log("Thread " + Thread.currentThread().getName() + ": Bắt đầu tải chunk " + chunkIndex + " từ server " + host + ":" + port);
+        DownloadGUI.log("Thread " + Thread.currentThread().getName() + ": Bắt đầu tải chunk " + chunkIndex + " từ " + host + ":" + port);
         for (int attempt = 0; attempt < 3; attempt++) {
             try (Socket socket = new Socket(host, port);
                  PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
                  BufferedInputStream in = new BufferedInputStream(socket.getInputStream())) {
-                out.println("GET " + chunkIndex + " " + chunkSize);
-                long end = Math.min((chunkIndex + 1) * chunkSize, fileSize);
-                long toRead = end - (chunkIndex * chunkSize);
+                long start = chunkIndex * chunkSize;
+                long end = Math.min(start + chunkSize, fileSize);
+                long toRead = end - start;
+                out.println("GET " + chunkIndex + " " + toRead);
                 byte[] chunk = new byte[(int) toRead];
                 int offset = 0;
                 while (toRead > 0) {
@@ -42,12 +43,12 @@ public class DownloadTask implements Callable<byte[]> {
                 DownloadGUI.log("Thread " + Thread.currentThread().getName() + ": Hoàn thành chunk " + chunkIndex);
                 return chunk;
             } catch (IOException e) {
-                System.err.println("Attempt " + (attempt + 1) + " failed for chunk " + chunkIndex + ": " + e.getMessage());
+                System.err.println("Attempt " + (attempt + 1) + " failed for chunk " + chunkIndex + " from " + host + ":" + port + ": " + e.getMessage());
                 DownloadGUI.log("Thread " + Thread.currentThread().getName() + ": Retry " + (attempt + 1) + " cho chunk " + chunkIndex);
-                if (attempt == 2) throw e;
+                if (attempt == 2) throw new IOException("All retries failed for " + host + ":" + port, e);
                 Thread.sleep(1000);
             }
         }
-        throw new RuntimeException("All retries failed for chunk " + chunkIndex);
+        throw new RuntimeException("Unexpected error in DownloadTask");
     }
 }
