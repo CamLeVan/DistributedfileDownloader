@@ -6,9 +6,14 @@ import java.security.NoSuchAlgorithmException;
 
 public class FileUtils {
     public static void saveChunk(byte[] data, String outputFile, long position) throws IOException {
-        try (RandomAccessFile file = new RandomAccessFile(outputFile, "rw")) {
-            file.seek(position);
-            file.write(data);
+        File file = new File(outputFile);
+        if (file.exists() && !file.delete()) {
+            throw new IOException("Failed to overwrite existing file: " + outputFile);
+        }
+        try (RandomAccessFile raf = new RandomAccessFile(outputFile, "rw")) {
+            raf.setLength(Math.max(raf.length(), position + data.length)); // Đảm bảo đủ không gian
+            raf.seek(position);
+            raf.write(data);
         } catch (IOException e) {
             throw new IOException("Failed to save chunk at position " + position + ": " + e.getMessage(), e);
         }

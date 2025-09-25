@@ -5,48 +5,48 @@ import java.io.InputStream;
 import java.util.Properties;
 
 public class ConfigLoader {
-    private static Properties props = new Properties();
+    private static final String CONFIG_FILE = "application.properties";
+    private static Properties properties;
 
     static {
-        try (InputStream is = ConfigLoader.class.getClassLoader().getResourceAsStream("application.properties")) {
-            if (is == null) {
-                System.err.println("Warning: application.properties not found, using defaults");
-                props.setProperty("servers", "localhost:12345,localhost:12346");
-                props.setProperty("expected_hash", "3fad459e0dbaaea15a0845d18fbcc27fdb1ae83e64b6f2b4f78c12eae43f7a00");
-                props.setProperty("file_path", "test.txt");
+        properties = new Properties();
+        try (InputStream input = ConfigLoader.class.getClassLoader().getResourceAsStream(CONFIG_FILE)) {
+            if (input != null) {
+                properties.load(input);
             } else {
-                props.load(is);
+                System.err.println("Warning: Could not find " + CONFIG_FILE + ", using default values");
+                // Giá trị mặc định
+                properties.setProperty("servers", "localhost:12347,localhost:12348");
+                properties.setProperty("expected_hash", "3fad459e0dbaaea15a0845d18fbcc27fdb1ae83e64b6f2b4f78c12eae43f7a00");
+                properties.setProperty("file_path", "test.txt");
             }
         } catch (IOException e) {
-            System.err.println("Failed to load config, using defaults: " + e.getMessage());
-            props.setProperty("servers", "localhost:12345,localhost:12346");
-            props.setProperty("expected_hash", "3fad459e0dbaaea15a0845d18fbcc27fdb1ae83e64b6f2b4f78c12eae43f7a00");
-            props.setProperty("file_path", "test.txt");
+            System.err.println("Failed to load config file: " + e.getMessage());
+            // Giá trị mặc định nếu có lỗi
+            properties.setProperty("servers", "localhost:12347,localhost:12348");
+            properties.setProperty("expected_hash", "3fad459e0dbaaea15a0845d18fbcc27fdb1ae83e64b6f2b4f78c12eae43f7a00");
+            properties.setProperty("file_path", "test.txt");
         }
     }
 
     public static String[] getServers() {
-        String serversStr = props.getProperty("servers", "").trim();
+        String serversStr = properties.getProperty("servers", "").trim();
         if (serversStr.isEmpty()) {
             System.err.println("Warning: No servers configured, using default");
-            return new String[]{"localhost:12345", "localhost:12346"};
+            return new String[]{"localhost:12347", "localhost:12348"};
         }
-        return serversStr.split(",");
+        String[] servers = serversStr.split(",");
+        for (int i = 0; i < servers.length; i++) {
+            servers[i] = servers[i].trim();
+        }
+        return servers;
     }
 
     public static String getExpectedHash() {
-        String hash = props.getProperty("expected_hash", "").trim();
-        if (hash.isEmpty()) {
-            System.err.println("Warning: No expected hash configured, verification will fail.");
-        }
-        return hash;
+        return properties.getProperty("expected_hash", "3fad459e0dbaaea15a0845d18fbcc27fdb1ae83e64b6f2b4f78c12eae43f7a00");
     }
 
     public static String getFilePath() {
-        String path = props.getProperty("file_path", "test.txt").trim();
-        if (path.isEmpty()) {
-            System.err.println("Warning: File path not configured, using default 'test.txt'");
-        }
-        return path;
+        return properties.getProperty("file_path", "test.txt");
     }
 }

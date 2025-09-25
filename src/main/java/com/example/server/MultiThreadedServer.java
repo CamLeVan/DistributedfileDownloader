@@ -1,7 +1,6 @@
 package com.example.server;
 
 import com.example.utils.ConfigLoader;
-
 import java.io.*;
 import java.net.*;
 
@@ -15,12 +14,20 @@ public class MultiThreadedServer {
             System.err.println("Error: File " + FILE_PATH + " not found or empty at " + file.getAbsolutePath());
             return;
         }
+        if (!file.canRead()) {
+            System.err.println("Error: No read permission for " + FILE_PATH);
+            return;
+        }
         System.out.println("File found: " + file.getAbsolutePath() + ", size: " + file.length() + " bytes");
         try (ServerSocket serverSocket = new ServerSocket(port)) {
             System.out.println("MultiThreadedServer running on port " + port + "...");
             while (true) {
-                Socket clientSocket = serverSocket.accept();
-                new Thread(new ClientHandler(clientSocket, FILE_PATH)).start();
+                try {
+                    Socket clientSocket = serverSocket.accept();
+                    new Thread(new ClientHandler(clientSocket, FILE_PATH)).start();
+                } catch (IOException e) {
+                    System.err.println("Accept error: " + e.getMessage());
+                }
             }
         } catch (IOException e) {
             System.err.println("Server error: " + e.getMessage());

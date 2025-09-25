@@ -1,25 +1,26 @@
 package com.example.server;
 
+import com.example.utils.ConfigLoader;
 import java.io.*;
 import java.net.*;
 
 public class Server {
+    private static final String FILE_PATH = System.getProperty("user.dir") + "/src/main/resources/" + ConfigLoader.getFilePath();
+
     public static void main(String[] args) {
-        try (ServerSocket serverSocket = new ServerSocket(12345)) { // [TCP Sockets, Step 1/4: Tạo ServerSocket và lắng nghe kết nối]
-            System.out.println("Basic Server running on port 12345..."); // [TCP Sockets, Step 2/4: Báo trạng thái server]
+        int port = 12345;
+        try (ServerSocket serverSocket = new ServerSocket(port)) {
+            System.out.println("Server running on port " + port + "...");
             while (true) {
-                try (Socket clientSocket = serverSocket.accept(); // [TCP Sockets, Step 3/4: Chấp nhận kết nối từ client]
-                     PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true); // [TCP Sockets, Step 1/4: Chuẩn bị gửi dữ liệu]
-                     BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()))) { // [TCP Sockets, Step 1/4: Chuẩn bị nhận dữ liệu]
-                    String input = in.readLine(); // [TCP Sockets, Step 2/4: Nhận dữ liệu từ client]
-                    System.out.println("Received: " + input); // [TCP Sockets, Step 3/4: Xử lý dữ liệu nhận được]
-                    out.println("Hello from Basic Server"); // [TCP Sockets, Step 4/4: Gửi phản hồi qua TCP]
-                } catch (IOException e) { // [Error Handling, Step 1/2: Bắt ngoại lệ]
-                    System.err.println("Error handling client: " + e.getMessage()); // [Error Handling, Step 2/2: Báo cáo lỗi]
+                try {
+                    Socket clientSocket = serverSocket.accept();
+                    new Thread(new ClientHandler(clientSocket, FILE_PATH)).start();
+                } catch (IOException e) {
+                    System.err.println("Accept error: " + e.getMessage());
                 }
             }
-        } catch (IOException e) { // [Error Handling, Step 1/2: Bắt ngoại lệ]
-            System.err.println("Server error: " + e.getMessage()); // [Error Handling, Step 2/2: Báo cáo lỗi]
+        } catch (IOException e) {
+            System.err.println("Server error: " + e.getMessage());
         }
     }
 }

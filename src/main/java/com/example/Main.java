@@ -11,7 +11,7 @@ public class Main {
         if (args.length > 0 && "server".equals(args[0])) {
             MultiThreadedServer.main(args);
         } else {
-            ConcurrentDownloadClient.main(args);
+            new DownloadGUI().setVisible(true); // Chạy GUI thay vì client trực tiếp
         }
     }
 }
