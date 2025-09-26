@@ -33,6 +33,9 @@ public class ConcurrentDownloadClient {
             return;
         }
 
+        // FIXED: Init file full size trước khi tải để tránh issue khi write chunks
+        FileUtils.initFile(OUTPUT_FILE, fileSize);
+
         DownloadGUI.log("Bắt đầu tải file với kích thước " + fileSize + " bytes từ " + activeServers.size() + " server");
 
         while (!activeServers.isEmpty()) {
@@ -70,6 +73,8 @@ public class ConcurrentDownloadClient {
                 if (success) {
                     break;
                 } else {
+                    // FIXED: Xóa partial file để retry full với remaining servers (tránh offset sai khi numServers thay đổi)
+                    new File(OUTPUT_FILE).delete();
                     for (String failed : failedServers) {
                         activeServers.remove(failed);
                     }
@@ -127,15 +132,18 @@ public class ConcurrentDownloadClient {
             if (parts.length != 2) continue;
             String host = parts[0].trim();
             int port = Integer.parseInt(parts[1].trim());
-            try (Socket socket = new Socket(host, port);
-                 PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-                 BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
-                out.println("GET_SIZE");
-                String sizeStr = in.readLine();
-                if (sizeStr != null && !sizeStr.isEmpty() && !sizeStr.startsWith("ERROR")) {
-                    return Long.parseLong(sizeStr.trim());
+            // FIXED: Thêm connect timeout để tránh hang nếu server không phản hồi
+            try (Socket socket = new Socket()) {
+                socket.connect(new InetSocketAddress(host, port), 5000);
+                try (PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+                     BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()))) {
+                    out.println("GET_SIZE");
+                    String sizeStr = in.readLine();
+                    if (sizeStr != null && !sizeStr.isEmpty() && !sizeStr.startsWith("ERROR")) {
+                        return Long.parseLong(sizeStr.trim());
+                    }
                 }
-            } catch (IOException e) {
+            } catch (IOException | NumberFormatException e) {
                 System.err.println("Failed to get file size from " + server + ": " + e.getMessage());
             }
         }

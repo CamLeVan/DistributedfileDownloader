@@ -6,12 +6,8 @@ import java.security.NoSuchAlgorithmException;
 
 public class FileUtils {
     public static void saveChunk(byte[] data, String outputFile, long position) throws IOException {
-        File file = new File(outputFile);
-        if (file.exists() && !file.delete()) {
-            throw new IOException("Failed to overwrite existing file: " + outputFile);
-        }
+        // FIXED: Bỏ delete file, chỉ write tại position (file đã set length trước)
         try (RandomAccessFile raf = new RandomAccessFile(outputFile, "rw")) {
-            raf.setLength(Math.max(raf.length(), position + data.length)); // Đảm bảo đủ không gian
             raf.seek(position);
             raf.write(data);
         } catch (IOException e) {
@@ -35,6 +31,13 @@ public class FileUtils {
             sb.append(String.format("%02x", b));
         }
         return sb.toString();
+    }
+
+    // FIXED: Thêm method helper để init file full size (gọi từ client)
+    public static void initFile(String outputFile, long fileSize) throws IOException {
+        try (RandomAccessFile raf = new RandomAccessFile(outputFile, "rw")) {
+            raf.setLength(fileSize);
+        }
     }
 
     public static void main(String[] args) throws Exception {

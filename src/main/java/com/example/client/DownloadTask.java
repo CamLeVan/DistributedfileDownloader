@@ -25,7 +25,8 @@ public class DownloadTask implements Callable<byte[]> {
 
     @Override
     public byte[] call() throws Exception {
-        int stepIndex = chunkIndex + 2;
+        // FIXED: stepIndex đúng: chunk 0 ở row 1 (sau bước 1: khởi tạo), chunk 1 ở row 2, v.v.
+        int stepIndex = 1 + chunkIndex;
         DownloadGUI.tableModel.setValueAt("Đang thực hiện", stepIndex, 5);
         DownloadGUI.log("Thread " + Thread.currentThread().getName() + ": Bắt đầu tải chunk " + chunkIndex + " từ " + host + ":" + port);
         long offset = calculateOffset(chunkIndex, fileSize, totalServers);
@@ -34,6 +35,10 @@ public class DownloadTask implements Callable<byte[]> {
             DownloadGUI.log("Thread " + Thread.currentThread().getName() + ": Chunk " + chunkIndex + " đã hoàn tất");
             DownloadGUI.tableModel.setValueAt("Hoàn tất", stepIndex, 5);
             return new byte[0];
+        }
+        // FIXED: Thêm check overflow cho byte[] (nếu file >2GB, chunk lớn)
+        if (toRead > Integer.MAX_VALUE) {
+            throw new IOException("Chunk too large for memory: " + toRead);
         }
         for (int attempt = 0; attempt < 3; attempt++) {
             try (Socket socket = new Socket()) {
