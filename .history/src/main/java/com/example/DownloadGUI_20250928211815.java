@@ -163,11 +163,7 @@ public class DownloadGUI extends JFrame {
                 button.setBackground(Color.CYAN);
                 button.addActionListener(e -> {
                     String fileName = (String) table.getValueAt(row, 0);
-                    // Get the parent GUI instance
-                    JFrame parentFrame = (JFrame) SwingUtilities.getWindowAncestor(table);
-                    if (parentFrame instanceof DownloadGUI) {
-                        ((DownloadGUI) parentFrame).viewFileContent(fileName);
-                    }
+                    viewFileContent(fileName);
                 });
                 return button;
             }
@@ -280,75 +276,6 @@ public class DownloadGUI extends JFrame {
 
     public static void log(String message) {
         System.out.println(message);
-    }
-
-    // Method để xem nội dung file
-    private void viewFileContent(String fileName) {
-        File file = new File(fileName);
-        if (!file.exists()) {
-            JOptionPane.showMessageDialog(this, 
-                "File " + fileName + " chưa được tải về!\nVui lòng tải file trước khi xem nội dung.", 
-                "File Chưa Tồn Tại", 
-                JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        try {
-            String content = new String(java.nio.file.Files.readAllBytes(file.toPath()), "UTF-8");
-            
-            // Tạo cửa sổ xem nội dung
-            JFrame contentFrame = new JFrame("Nội Dung File: " + fileName);
-            contentFrame.setSize(600, 400);
-            contentFrame.setLocationRelativeTo(this);
-            
-            JTextArea textArea = new JTextArea(content);
-            textArea.setEditable(false);
-            textArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
-            
-            JScrollPane scrollPane = new JScrollPane(textArea);
-            contentFrame.add(scrollPane);
-            
-            // Thêm nút xuất file
-            JPanel buttonPanel = new JPanel();
-            JButton exportButton = new JButton("Xuất File");
-            exportButton.addActionListener(e -> exportFile(fileName));
-            buttonPanel.add(exportButton);
-            
-            contentFrame.add(buttonPanel, BorderLayout.SOUTH);
-            contentFrame.setVisible(true);
-            
-        } catch (IOException ex) {
-            JOptionPane.showMessageDialog(this, 
-                "Lỗi đọc file: " + ex.getMessage(), 
-                "Lỗi Đọc File", 
-                JOptionPane.ERROR_MESSAGE);
-        }
-    }
-
-    // Method để xuất file
-    private void exportFile(String fileName) {
-        JFileChooser chooser = new JFileChooser();
-        chooser.setDialogTitle("Chọn vị trí lưu file");
-        chooser.setSelectedFile(new File(fileName));
-        
-        if (chooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
-            try {
-                File sourceFile = new File(fileName);
-                File destFile = chooser.getSelectedFile();
-                Files.copy(sourceFile.toPath(), destFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                
-                JOptionPane.showMessageDialog(this, 
-                    "Xuất file thành công!\nVị trí: " + destFile.getAbsolutePath(), 
-                    "Xuất Thành Công", 
-                    JOptionPane.INFORMATION_MESSAGE);
-                    
-            } catch (IOException ex) {
-                JOptionPane.showMessageDialog(this, 
-                    "Lỗi xuất file: " + ex.getMessage(), 
-                    "Lỗi Xuất File", 
-                    JOptionPane.ERROR_MESSAGE);
-            }
-        }
     }
     private void uploadNewFile() {
         JFileChooser chooser = new JFileChooser();

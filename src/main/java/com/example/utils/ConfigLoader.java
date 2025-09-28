@@ -15,17 +15,19 @@ public class ConfigLoader {
                 properties.load(input);
             } else {
                 System.err.println("Warning: Could not find " + CONFIG_FILE + ", using default values");
-                // Giá trị mặc định
                 properties.setProperty("servers", "localhost:12347,localhost:12348");
                 properties.setProperty("expected_hash", "3fad459e0dbaaea15a0845d18fbcc27fdb1ae83e64b6f2b4f78c12eae43f7a00");
                 properties.setProperty("file_path", "test.txt");
+                properties.setProperty("master_server", "localhost:12347");
+                properties.setProperty("db_path", "files.db");
             }
         } catch (IOException e) {
             System.err.println("Failed to load config file: " + e.getMessage());
-            // Giá trị mặc định nếu có lỗi
             properties.setProperty("servers", "localhost:12347,localhost:12348");
             properties.setProperty("expected_hash", "3fad459e0dbaaea15a0845d18fbcc27fdb1ae83e64b6f2b4f78c12eae43f7a00");
             properties.setProperty("file_path", "test.txt");
+            properties.setProperty("master_server", "localhost:12347");
+            properties.setProperty("db_path", "files.db");
         }
     }
 
@@ -48,5 +50,16 @@ public class ConfigLoader {
 
     public static String getFilePath() {
         return properties.getProperty("file_path", "test.txt");
+    }
+
+    // FIXED: Default an toàn nếu servers rỗng
+    public static String getMasterServer() {
+        String[] servers = getServers();
+        String defaultMaster = servers.length > 0 ? servers[0] : "localhost:12347";
+        return properties.getProperty("master_server", defaultMaster);
+    }
+
+    public static String getDbPath() {
+        return properties.getProperty("db_path", "files.db");
     }
 }

@@ -163,11 +163,7 @@ public class DownloadGUI extends JFrame {
                 button.setBackground(Color.CYAN);
                 button.addActionListener(e -> {
                     String fileName = (String) table.getValueAt(row, 0);
-                    // Get the parent GUI instance
-                    JFrame parentFrame = (JFrame) SwingUtilities.getWindowAncestor(table);
-                    if (parentFrame instanceof DownloadGUI) {
-                        ((DownloadGUI) parentFrame).viewFileContent(fileName);
-                    }
+                    viewFileContent(fileName);
                 });
                 return button;
             }

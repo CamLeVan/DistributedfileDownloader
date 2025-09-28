@@ -63,16 +63,14 @@ public class DownloadGUI extends JFrame {
         listButton.setToolTipText("Tải danh sách file từ server");
         fileListPanel.add(listButton, BorderLayout.NORTH);
         
-        fileTableModel = new DefaultTableModel(new Object[]{"Tên File", "Kích Thước (bytes)", "Hash SHA-256", "Hành Động", "Xem Nội Dung"}, 0);
+        fileTableModel = new DefaultTableModel(new Object[]{"Tên File", "Kích Thước (bytes)", "Hash SHA-256", "Hành Động"}, 0);
         fileTable = new JTable(fileTableModel);
         fileTable.setEnabled(true);
         fileTable.setRowHeight(30);
         
-        // Custom renderer cho Action columns thành button
+        // Custom renderer cho Action column thành button
         fileTable.getColumnModel().getColumn(3).setCellRenderer(new ButtonRenderer());
         fileTable.getColumnModel().getColumn(3).setCellEditor(new ButtonEditor(new JCheckBox()));
-        fileTable.getColumnModel().getColumn(4).setCellRenderer(new ViewContentRenderer());
-        fileTable.getColumnModel().getColumn(4).setCellEditor(new ViewContentEditor(new JCheckBox()));
         
         JScrollPane fileScroll = new JScrollPane(fileTable);
         fileListPanel.add(fileScroll, BorderLayout.CENTER);
@@ -154,39 +152,6 @@ public class DownloadGUI extends JFrame {
         }
     }
 
-    // Renderer cho nút "Xem File"
-    static class ViewContentRenderer extends DefaultTableCellRenderer {
-        @Override
-        public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
-            if ("Xem File".equals(value)) {
-                JButton button = new JButton("Xem File");
-                button.setBackground(Color.CYAN);
-                button.addActionListener(e -> {
-                    String fileName = (String) table.getValueAt(row, 0);
-                    // Get the parent GUI instance
-                    JFrame parentFrame = (JFrame) SwingUtilities.getWindowAncestor(table);
-                    if (parentFrame instanceof DownloadGUI) {
-                        ((DownloadGUI) parentFrame).viewFileContent(fileName);
-                    }
-                });
-                return button;
-            }
-            return super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
-        }
-    }
-
-    // Editor cho nút "Xem File"
-    static class ViewContentEditor extends DefaultCellEditor {
-        public ViewContentEditor(JCheckBox checkBox) {
-            super(checkBox);
-        }
-
-        @Override
-        public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
-            return new ViewContentRenderer().getTableCellRendererComponent(table, value, isSelected, true, row, column);
-        }
-    }
-
     private void fetchFileList() {
         statusLabel.setText("Đang lấy danh sách file từ server...");
         statusLabel.setForeground(Color.ORANGE);
@@ -196,12 +161,11 @@ public class DownloadGUI extends JFrame {
                 fileTableModel.setRowCount(0);
                 for (String[] row : files) {
                     if (row.length >= 3) {
-                        String[] newRow = new String[5];
+                        String[] newRow = new String[4];
                         newRow[0] = row[0]; // tên file
                         newRow[1] = row[1]; // kích thước
                         newRow[2] = row[2].substring(0, Math.min(16, row[2].length())) + "..."; // hash rút gọn
                         newRow[3] = "Tải Ngay";  // hành động
-                        newRow[4] = "Xem File";  // xem nội dung
                         fileTableModel.addRow(newRow);
                     }
                 }
@@ -263,15 +227,15 @@ public class DownloadGUI extends JFrame {
 
     private void updateStepTableStepByStep(String fileName) {
         String[] servers = ConfigLoader.getServers();
-        addStep(1, "Khởi tạo kết nối đến " + servers.length + " server cho " + fileName, "TCP", "Client-Server", "ConcurrentDownloadClient.downloadFile()", "Đang thực hiện");
+        addStep(1, "Khởi tạo kết nối đến các server cho " + fileName, "TCP", "Client-Server", "ConcurrentDownloadClient.downloadFile()", "Chờ");
         for (int i = 0; i < servers.length; i++) {
             String[] parts = servers[i].split(":");
-            addStep(2 + i, "Gửi yêu cầu tải phần " + (i+1) + " đến " + servers[i], "TCP", "Client-Server", "DownloadTask.call()", "Đang thực hiện");
+            addStep(2 + i, "Gửi yêu cầu tải chunk " + i + " đến " + servers[i] + " cho " + fileName, "TCP", "Client-Server", "DownloadTask.call()", "Chờ");
         }
-        addStep(2 + servers.length, "Server xử lý và gửi dữ liệu phần file", "TCP", "Client-Server", "ClientHandler.run()", "Đang thực hiện");
-        addStep(3 + servers.length, "Client nhận và lưu các phần của file", "TCP", "Client-Server", "DownloadTask.call()", "Đang thực hiện");
-        addStep(4 + servers.length, "Ghép các phần thành file hoàn chỉnh", "N/A", "Client-Server", "FileUtils.saveChunk()", "Đang thực hiện");
-        addStep(5 + servers.length, "Xác thực tính toàn vẹn file bằng SHA-256", "N/A", "Client-Server", "FileUtils.calculateHash()", "Đang thực hiện");
+        addStep(2 + servers.length, "Server xử lý và gửi dữ liệu chunk cho " + fileName, "TCP", "Client-Server", "ClientHandler.run()", "Chờ");
+        addStep(3 + servers.length, "Client nhận và lưu các chunk của " + fileName, "TCP", "Client-Server", "DownloadTask.call()", "Chờ");
+        addStep(4 + servers.length, "Ghép các chunk thành file " + fileName, "N/A", "Client-Server", "FileUtils.saveChunk()", "Chờ");
+        addStep(5 + servers.length, "Xác thực hash của " + fileName, "N/A", "Client-Server", "FileUtils.calculateHash()", "Chờ");
     }
 
     private void addStep(int step, String activity, String protocol, String model, String location, String status) {
@@ -281,120 +245,28 @@ public class DownloadGUI extends JFrame {
     public static void log(String message) {
         System.out.println(message);
     }
-
-    // Method để xem nội dung file
-    private void viewFileContent(String fileName) {
-        File file = new File(fileName);
-        if (!file.exists()) {
-            JOptionPane.showMessageDialog(this, 
-                "File " + fileName + " chưa được tải về!\nVui lòng tải file trước khi xem nội dung.", 
-                "File Chưa Tồn Tại", 
-                JOptionPane.WARNING_MESSAGE);
-            return;
-        }
-
-        try {
-            String content = new String(java.nio.file.Files.readAllBytes(file.toPath()), "UTF-8");
-            
-            // Tạo cửa sổ xem nội dung
-            JFrame contentFrame = new JFrame("Nội Dung File: " + fileName);
-            contentFrame.setSize(600, 400);
-            contentFrame.setLocationRelativeTo(this);
-            
-            JTextArea textArea = new JTextArea(content);
-            textArea.setEditable(false);
-            textArea.setFont(new Font("Monospaced", Font.PLAIN, 12));
-            
-            JScrollPane scrollPane = new JScrollPane(textArea);
-            contentFrame.add(scrollPane);
-            
-            // Thêm nút xuất file
-            JPanel buttonPanel = new JPanel();
-            JButton exportButton = new JButton("Xuất File");
-            exportButton.addActionListener(e -> exportFile(fileName));
-            buttonPanel.add(exportButton);
-            
-            contentFrame.add(buttonPanel, BorderLayout.SOUTH);
-            contentFrame.setVisible(true);
-            
-        } catch (IOException ex) {
-            JOptionPane.showMessageDialog(this, 
-                "Lỗi đọc file: " + ex.getMessage(), 
-                "Lỗi Đọc File", 
-                JOptionPane.ERROR_MESSAGE);
-        }
-    }
-
-    // Method để xuất file
-    private void exportFile(String fileName) {
-        JFileChooser chooser = new JFileChooser();
-        chooser.setDialogTitle("Chọn vị trí lưu file");
-        chooser.setSelectedFile(new File(fileName));
-        
-        if (chooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
-            try {
-                File sourceFile = new File(fileName);
-                File destFile = chooser.getSelectedFile();
-                Files.copy(sourceFile.toPath(), destFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                
-                JOptionPane.showMessageDialog(this, 
-                    "Xuất file thành công!\nVị trí: " + destFile.getAbsolutePath(), 
-                    "Xuất Thành Công", 
-                    JOptionPane.INFORMATION_MESSAGE);
-                    
-            } catch (IOException ex) {
-                JOptionPane.showMessageDialog(this, 
-                    "Lỗi xuất file: " + ex.getMessage(), 
-                    "Lỗi Xuất File", 
-                    JOptionPane.ERROR_MESSAGE);
-            }
-        }
-    }
     private void uploadNewFile() {
         JFileChooser chooser = new JFileChooser();
-        chooser.setDialogTitle("Chọn File Để Tải Lên Server");
         chooser.setFileSelectionMode(JFileChooser.FILES_ONLY);
-        
         if (chooser.showOpenDialog(this) == JFileChooser.APPROVE_OPTION) {
             File selectedFile = chooser.getSelectedFile();
-            statusLabel.setText("Đang tải lên file: " + selectedFile.getName() + "...");
-            statusLabel.setForeground(Color.ORANGE);
-            
             try {
-                // Tính hash SHA-256
                 String hash = FileUtils.calculateHash(selectedFile.getAbsolutePath(), "SHA-256");
                 long size = selectedFile.length();
                 String fileName = selectedFile.getName();
-                
-                // Copy file vào thư mục resources
-                String basePath = System.getProperty("user.dir") + "/src/main/resources/";
+                // Copy to /files/
+                String basePath = System.getProperty("user.dir") + "/files/";
                 new File(basePath).mkdirs();
                 Files.copy(selectedFile.toPath(), new File(basePath + fileName).toPath(), StandardCopyOption.REPLACE_EXISTING);
-                
-                // Thêm vào database
+                // Insert DB
                 DBUtils.insertFile(fileName, size, hash);
-                
-                statusLabel.setText("Tải lên file " + fileName + " thành công!");
-                statusLabel.setForeground(Color.GREEN);
-                
-                JOptionPane.showMessageDialog(this, 
-                    "Tải lên file thành công!\n" +
-                    "Tên file: " + fileName + "\n" +
-                    "Kích thước: " + size + " bytes\n" +
-                    "Hash SHA-256: " + hash.substring(0, 16) + "...", 
-                    "Tải Lên Thành Công", 
-                    JOptionPane.INFORMATION_MESSAGE);
-                
-                // Làm mới danh sách file
+                statusLabel.setText("Uploaded " + fileName + " successfully!");
+                JOptionPane.showMessageDialog(this, "Upload " + fileName + " OK. Hash: " + hash);
+                // Refresh list
                 fetchFileList();
-                
             } catch (IOException | NoSuchAlgorithmException ex) {
-                statusLabel.setText("Lỗi tải lên: " + ex.getMessage());
-                statusLabel.setForeground(Color.RED);
-                JOptionPane.showMessageDialog(this, 
-                    "Lỗi tải lên file: " + ex.getMessage(), 
-                    "Lỗi Tải Lên", 
-                    JOptionPane.ERROR_MESSAGE);
+                statusLabel.setText("Upload error: " + ex.getMessage());
+                JOptionPane.showMessageDialog(this, "Error: " + ex.getMessage(), "Upload Failed", JOptionPane.ERROR_MESSAGE);
             }
         }
     }
