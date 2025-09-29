@@ -214,7 +214,7 @@ public class DownloadGUI extends JFrame {
     private void fetchFileList() {
         // Cập nhật UI state
         SwingUtilities.invokeLater(() -> {
-            statusLabel.setText("Đang lấy danh sách file từ server...");
+            statusLabel.setText("Đang lay danh sach file tu server...");
             statusLabel.setForeground(Color.ORANGE);
             listButton.setEnabled(false);
         });
