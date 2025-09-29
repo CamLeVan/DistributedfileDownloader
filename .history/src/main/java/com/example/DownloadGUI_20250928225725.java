@@ -35,9 +35,6 @@ public class DownloadGUI extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
         setSize(1000, 700);
-        
-        // Xóa các file đã tải cũ khi khởi động GUI
-        cleanupOldFiles();
 
         // Panel điều khiển chính
         JPanel controlPanel = new JPanel(new FlowLayout());
@@ -71,11 +68,11 @@ public class DownloadGUI extends JFrame {
         fileTable.setEnabled(true);
         fileTable.setRowHeight(30);
         
-        // Custom renderer cho Action columns thành button - FIXED với reference đúng
-        fileTable.getColumnModel().getColumn(3).setCellRenderer(new ButtonRenderer(this));
-        fileTable.getColumnModel().getColumn(3).setCellEditor(new ButtonEditor(new JCheckBox(), this));
-        fileTable.getColumnModel().getColumn(4).setCellRenderer(new ViewContentRenderer(this));
-        fileTable.getColumnModel().getColumn(4).setCellEditor(new ViewContentEditor(new JCheckBox(), this));
+        // Custom renderer cho Action columns thành button
+        fileTable.getColumnModel().getColumn(3).setCellRenderer(new ButtonRenderer());
+        fileTable.getColumnModel().getColumn(3).setCellEditor(new ButtonEditor(new JCheckBox()));
+        fileTable.getColumnModel().getColumn(4).setCellRenderer(new ViewContentRenderer());
+        fileTable.getColumnModel().getColumn(4).setCellEditor(new ViewContentEditor(new JCheckBox()));
         
         JScrollPane fileScroll = new JScrollPane(fileTable);
         fileListPanel.add(fileScroll, BorderLayout.CENTER);
@@ -196,92 +193,41 @@ public class DownloadGUI extends JFrame {
         }
     }
 
-    // Editor cho nút "Xem File" - FIXED với reference đúng
+    // Editor cho nút "Xem File"
     static class ViewContentEditor extends DefaultCellEditor {
-        private DownloadGUI parentGUI;
-        
-        public ViewContentEditor(JCheckBox checkBox, DownloadGUI parent) {
+        public ViewContentEditor(JCheckBox checkBox) {
             super(checkBox);
-            this.parentGUI = parent;
         }
 
         @Override
         public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
-            return new ViewContentRenderer(parentGUI).getTableCellRendererComponent(table, value, isSelected, true, row, column);
+            return new ViewContentRenderer().getTableCellRendererComponent(table, value, isSelected, true, row, column);
         }
     }
 
     private void fetchFileList() {
-        // Cập nhật UI state
-        SwingUtilities.invokeLater(() -> {
-            statusLabel.setText("Đang lấy danh sách file từ server...");
-            statusLabel.setForeground(Color.ORANGE);
-            listButton.setEnabled(false);
-        });
-        
+        statusLabel.setText("Đang lấy danh sách file từ server...");
+        statusLabel.setForeground(Color.ORANGE);
         new Thread(() -> {
-            try {
-                List<String[]> files = ConcurrentDownloadClient.getFileListFromMaster();
-                
-                // Cập nhật UI với kết quả
-                SwingUtilities.invokeLater(() -> {
-                    fileTableModel.setRowCount(0);
-                    
-                    if (files != null && !files.isEmpty()) {
-                        for (String[] row : files) {
-                            if (row.length >= 3) {
-                                String[] newRow = new String[5];
-                                newRow[0] = row[0]; // tên file
-                                newRow[1] = formatFileSize(row[1]); // kích thước có format
-                                newRow[2] = row[2].substring(0, Math.min(16, row[2].length())) + "..."; // hash rút gọn
-                                newRow[3] = "Tải Ngay";  // hành động
-                                newRow[4] = "Xem File";  // xem nội dung
-                                fileTableModel.addRow(newRow);
-                            }
-                        }
-                        
-                        statusLabel.setText("✓ Đã lấy danh sách: " + files.size() + " file có sẵn");
-                        statusLabel.setForeground(Color.GREEN);
-                        downloadSelectedButton.setEnabled(true);
-                    } else {
-                        statusLabel.setText("✗ Không có file nào trên server");
-                        statusLabel.setForeground(Color.RED);
-                        downloadSelectedButton.setEnabled(false);
+            List<String[]> files = ConcurrentDownloadClient.getFileListFromMaster();
+            SwingUtilities.invokeLater(() -> {
+                fileTableModel.setRowCount(0);
+                for (String[] row : files) {
+                    if (row.length >= 3) {
+                        String[] newRow = new String[5];
+                        newRow[0] = row[0]; // tên file
+                        newRow[1] = row[1]; // kích thước
+                        newRow[2] = row[2].substring(0, Math.min(16, row[2].length())) + "..."; // hash rút gọn
+                        newRow[3] = "Tải Ngay";  // hành động
+                        newRow[4] = "Xem File";  // xem nội dung
+                        fileTableModel.addRow(newRow);
                     }
-                    
-                    listButton.setEnabled(true);
-                });
-                
-            } catch (Exception ex) {
-                // Xử lý lỗi
-                SwingUtilities.invokeLater(() -> {
-                    statusLabel.setText("✗ Lỗi lấy danh sách: " + ex.getMessage());
-                    statusLabel.setForeground(Color.RED);
-                    downloadSelectedButton.setEnabled(false);
-                    listButton.setEnabled(true);
-                    
-                    JOptionPane.showMessageDialog(this, 
-                        "✗ Lỗi lấy danh sách file:\n" + ex.getMessage() + "\n" +
-                        "• Kiểm tra kết nối đến Master Server\n" +
-                        "• Đảm bảo Master Server đang chạy", 
-                        "Lỗi Kết Nối", 
-                        JOptionPane.ERROR_MESSAGE);
-                });
-            }
+                }
+                downloadSelectedButton.setEnabled(!files.isEmpty());
+                statusLabel.setText("Đã lấy danh sách: " + files.size() + " file có sẵn");
+                statusLabel.setForeground(files.isEmpty() ? Color.RED : Color.GREEN);
+            });
         }).start();
-    }
-    
-    // Helper method để format file size
-    private String formatFileSize(String sizeStr) {
-        try {
-            long size = Long.parseLong(sizeStr);
-            if (size < 1024) return size + " B";
-            if (size < 1024 * 1024) return String.format("%.1f KB", size / 1024.0);
-            if (size < 1024 * 1024 * 1024) return String.format("%.1f MB", size / (1024.0 * 1024));
-            return String.format("%.1f GB", size / (1024.0 * 1024 * 1024));
-        } catch (NumberFormatException e) {
-            return sizeStr + " bytes";
-        }
     }
 
     // Kiểm tra file được chọn
@@ -296,74 +242,35 @@ public class DownloadGUI extends JFrame {
     }
 
     private void startDownload(String fileName) {
-        // Validation đầu vào
-        if (fileName == null || fileName.trim().isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Tên file không hợp lệ!", "Lỗi Input", JOptionPane.ERROR_MESSAGE);
-            return;
-        }
-        
-        // Cập nhật UI state
-        SwingUtilities.invokeLater(() -> {
-            statusLabel.setText("Đang tải file: " + fileName + "...");
-            statusLabel.setForeground(Color.ORANGE);
-            tableModel.setRowCount(0);
-            resumeButton.setEnabled(false);
-            downloadButton.setEnabled(false);
-            downloadSelectedButton.setEnabled(false);
-        });
+        statusLabel.setText("Đang tải file: " + fileName + "...");
+        statusLabel.setForeground(Color.ORANGE);
+        tableModel.setRowCount(0);
+        resumeButton.setEnabled(false);
+        downloadButton.setEnabled(false);
         
         new Thread(() -> {
             try {
-                // Cập nhật step table trước khi download
-                SwingUtilities.invokeLater(() -> updateStepTableStepByStep(fileName));
-                
-                // Thực hiện download
+                updateStepTableStepByStep(fileName);
                 ConcurrentDownloadClient.downloadFile(fileName);
-                
-                // Cập nhật UI thành công
-                SwingUtilities.invokeLater(() -> {
-                    statusLabel.setText("✓ Tải file " + fileName + " thành công!");
-                    statusLabel.setForeground(Color.GREEN);
-                    if (tableModel.getRowCount() > 0) {
-                        tableModel.setValueAt("✓ Hoàn thành", tableModel.getRowCount() - 1, 5);
-                    }
-                    downloadButton.setEnabled(true);
-                    downloadSelectedButton.setEnabled(true);
-                });
-                
-                // Hiển thị dialog thành công
-                SwingUtilities.invokeLater(() -> 
-                    JOptionPane.showMessageDialog(this, 
-                        "✓ Tải file " + fileName + " thành công!\n" +
-                        "✓ Hash đã được xác thực.\n" +
-                        "✓ File đã sẵn sàng để xem.", 
-                        "Tải Thành Công", 
-                        JOptionPane.INFORMATION_MESSAGE)
-                );
-                
+                statusLabel.setText("Tải file " + fileName + " thành công!");
+                statusLabel.setForeground(Color.GREEN);
+                tableModel.setValueAt("Hoàn thành", tableModel.getRowCount() - 1, 5);
+                JOptionPane.showMessageDialog(this, 
+                    "Tải file " + fileName + " thành công!\n" +
+                    "Hash đã được xác thực.", 
+                    "Tải Thành Công", 
+                    JOptionPane.INFORMATION_MESSAGE);
             } catch (IOException | NoSuchAlgorithmException ex) {
-                // Cập nhật UI lỗi
-                SwingUtilities.invokeLater(() -> {
-                    statusLabel.setText("✗ Lỗi tải file: " + ex.getMessage());
-                    statusLabel.setForeground(Color.RED);
-                    if (tableModel.getRowCount() > 0) {
-                        tableModel.setValueAt("✗ Lỗi: " + ex.getMessage(), tableModel.getRowCount() - 1, 5);
-                    }
-                    resumeButton.setEnabled(true);
-                    downloadButton.setEnabled(true);
-                    downloadSelectedButton.setEnabled(true);
-                });
-                
-                // Hiển thị dialog lỗi
-                SwingUtilities.invokeLater(() -> 
-                    JOptionPane.showMessageDialog(this, 
-                        "✗ Lỗi tải file: " + ex.getMessage() + "\n" +
-                        "• Kiểm tra kết nối mạng\n" +
-                        "• Đảm bảo servers đang chạy\n" +
-                        "• Thử lại sau", 
-                        "Lỗi Tải File", 
-                        JOptionPane.ERROR_MESSAGE)
-                );
+                statusLabel.setText("Lỗi tải file: " + ex.getMessage());
+                statusLabel.setForeground(Color.RED);
+                tableModel.setValueAt("Lỗi: " + ex.getMessage(), tableModel.getRowCount() - 1, 5);
+                resumeButton.setEnabled(true);
+                JOptionPane.showMessageDialog(this, 
+                    "Lỗi tải file: " + ex.getMessage(), 
+                    "Lỗi Tải File", 
+                    JOptionPane.ERROR_MESSAGE);
+            } finally {
+                downloadButton.setEnabled(true);
             }
         }).start();
     }
@@ -391,31 +298,6 @@ public class DownloadGUI extends JFrame {
 
     public static void log(String message) {
         System.out.println(message);
-    }
-    
-    // Method để xóa các file đã tải cũ
-    private void cleanupOldFiles() {
-        try {
-            // Xóa các file đã tải trước đó
-            String[] filesToClean = {"test.txt", "sample.txt", "downloaded_file.txt"};
-            for (String fileName : filesToClean) {
-                File file = new File(fileName);
-                if (file.exists()) {
-                    if (file.delete()) {
-                        System.out.println("Đã xóa file cũ: " + fileName);
-                    }
-                }
-            }
-            
-            // Xóa progress trong database
-            DBUtils.clearProgress("test.txt");
-            DBUtils.clearProgress("sample.txt");
-            
-            System.out.println("✓ Đã dọn dẹp file cũ và progress");
-            
-        } catch (Exception ex) {
-            System.out.println("⚠ Lỗi khi dọn dẹp file cũ: " + ex.getMessage());
-        }
     }
 
     // Method để xem nội dung file

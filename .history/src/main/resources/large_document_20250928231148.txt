@@ -1,0 +1,36 @@
+This is a comprehensive test file for the distributed file downloader system. It contains multiple paragraphs of text to simulate a larger file that can be effectively split into chunks and downloaded from multiple servers simultaneously.
+
+The content includes various types of text patterns to test the robustness of our chunking algorithm and concurrent download capabilities. This file is designed to be substantial enough to demonstrate the distributed nature of our system.
+
+Key features being tested:
+1. File chunking algorithm
+2. Concurrent download from multiple servers
+3. Hash verification (SHA-256)
+4. Resume capability
+5. Error handling and retry mechanism
+6. Progress tracking
+7. File integrity validation
+
+The distributed file downloader system implements a client-multiple servers architecture where:
+- Master server manages metadata and file information
+- Slave servers store actual file chunks
+- Client downloads chunks concurrently from multiple servers
+- System ensures data integrity through hash verification
+
+This approach provides several advantages:
+- Faster download speeds through parallel processing
+- Better fault tolerance with multiple server redundancy
+- Scalable architecture that can handle large files efficiently
+- Robust error handling with automatic retry mechanisms
+
+The system uses TCP sockets for reliable data transmission and implements proper error handling for network failures, server unavailability, and data corruption scenarios.
+
+Additional content to make this file larger and more suitable for testing distributed download functionality. This text continues to expand the file size to ensure proper chunking behavior and demonstrate the system's capabilities with realistic file sizes.
+
+More paragraphs are added here to increase the overall file size and provide sufficient content for meaningful chunk distribution across multiple servers. The goal is to create a file that is large enough to require multiple chunks but not so large as to cause performance issues during testing.
+
+This content includes various text patterns, numbers, and special characters to thoroughly test the system's ability to handle different types of data during the download and reassembly process.
+
+The file continues with additional content to reach a target size that will effectively demonstrate the distributed download capabilities while remaining manageable for testing purposes.
+
+Final paragraphs to complete the file content and ensure it reaches an appropriate size for comprehensive testing of the distributed file downloader system.

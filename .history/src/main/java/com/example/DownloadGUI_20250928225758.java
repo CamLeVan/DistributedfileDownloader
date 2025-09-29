@@ -35,9 +35,6 @@ public class DownloadGUI extends JFrame {
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
         setSize(1000, 700);
-        
-        // Xóa các file đã tải cũ khi khởi động GUI
-        cleanupOldFiles();
 
         // Panel điều khiển chính
         JPanel controlPanel = new JPanel(new FlowLayout());
@@ -391,31 +388,6 @@ public class DownloadGUI extends JFrame {
 
     public static void log(String message) {
         System.out.println(message);
-    }
-    
-    // Method để xóa các file đã tải cũ
-    private void cleanupOldFiles() {
-        try {
-            // Xóa các file đã tải trước đó
-            String[] filesToClean = {"test.txt", "sample.txt", "downloaded_file.txt"};
-            for (String fileName : filesToClean) {
-                File file = new File(fileName);
-                if (file.exists()) {
-                    if (file.delete()) {
-                        System.out.println("Đã xóa file cũ: " + fileName);
-                    }
-                }
-            }
-            
-            // Xóa progress trong database
-            DBUtils.clearProgress("test.txt");
-            DBUtils.clearProgress("sample.txt");
-            
-            System.out.println("✓ Đã dọn dẹp file cũ và progress");
-            
-        } catch (Exception ex) {
-            System.out.println("⚠ Lỗi khi dọn dẹp file cũ: " + ex.getMessage());
-        }
     }
 
     // Method để xem nội dung file
