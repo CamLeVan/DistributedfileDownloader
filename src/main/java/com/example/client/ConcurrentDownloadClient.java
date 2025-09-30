@@ -12,7 +12,7 @@ import java.util.*;
 import java.util.concurrent.*;
 
 public class ConcurrentDownloadClient {
-    private static final String OUTPUT_FILE = "downloaded_file.txt";  // Dynamic name sau
+    private static final String OUTPUT_FILE = "downloaded_file.dat";  // Dynamic name sau
 
     public static List<String[]> getFileListFromMaster() {
         List<String[]> files = new ArrayList<>();
@@ -287,7 +287,7 @@ public class ConcurrentDownloadClient {
 
     public static void main(String[] args) {
         try {
-            downloadFile("test.txt");
+            downloadFile("test.dat");
         } catch (IOException | NoSuchAlgorithmException e) {
             System.err.println("Client error: " + e.getMessage());
         }

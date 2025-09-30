@@ -67,11 +67,11 @@ public class DBUtils {
                     System.err.println("Expected hash is invalid or empty: " + expectedHash);
                     throw new IllegalStateException("Invalid expected hash");
                 }
-                insertFile("test.txt", 527L, expectedHash);
-                insertFile("sample.txt", 360L, "11aa6546294a756a06d1ceb551843d9492d06dd241f8b474dd75697678e78b6c");
+                insertFile("test.dat", 527L, expectedHash);
+                insertFile("sample.dat", 360L, "11aa6546294a756a06d1ceb551843d9492d06dd241f8b474dd75697678e78b6c");
                 
                 // Thêm các file lớn hơn để demo
-                insertFile("large_document.txt", 2048L, "a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef1234567890");
+                insertFile("large_document.dat", 2048L, "a1b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef1234567890");
                 insertFile("system_admin.sh", 1536L, "b2c3d4e5f6789012345678901234567890abcdef1234567890abcdef1234567890ab");
                 insertFile("DistributedComputingExample.java", 8192L, "c3d4e5f6789012345678901234567890abcdef1234567890abcdef1234567890abcd");
                 

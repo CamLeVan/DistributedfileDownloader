@@ -28,12 +28,16 @@ public class DownloadTask implements Callable<byte[]> {
     @Override
     public byte[] call() throws Exception {
         int stepIndex = 1 + chunkIndex;
-        DownloadGUI.tableModel.setValueAt("Đang thực hiện " + fileName, stepIndex, 5);
+        if (DownloadGUI.tableModel != null) {
+            DownloadGUI.tableModel.setValueAt("Đang thực hiện " + fileName, stepIndex, 5);
+        }
         DownloadGUI.log("Thread " + Thread.currentThread().getName() + ": Bắt đầu tải chunk " + chunkIndex + " của " + fileName + " từ " + host + ":" + port);
         long offset = calculateOffset(chunkIndex, fileSize, totalServers);
         long toRead = Math.min(chunkSize, fileSize - offset);
         if (toRead <= 0) {
-            DownloadGUI.tableModel.setValueAt("Hoàn tất " + fileName, stepIndex, 5);
+            if (DownloadGUI.tableModel != null) {
+                DownloadGUI.tableModel.setValueAt("Hoàn tất " + fileName, stepIndex, 5);
+            }
             return new byte[0];
         }
         if (toRead > Integer.MAX_VALUE) {
@@ -60,7 +64,9 @@ public class DownloadTask implements Callable<byte[]> {
                         throw new IOException("Received " + offsetInChunk + " != expected " + chunk.length);
                     }
                     DownloadGUI.log("Thread " + Thread.currentThread().getName() + ": Hoàn thành chunk " + chunkIndex + " của " + fileName);
-                    DownloadGUI.tableModel.setValueAt("Hoàn tất " + fileName, stepIndex, 5);
+                    if (DownloadGUI.tableModel != null) {
+                        DownloadGUI.tableModel.setValueAt("Hoàn tất " + fileName, stepIndex, 5);
+                    }
                     return chunk;
                 }
             } catch (IOException e) {

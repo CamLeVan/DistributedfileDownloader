@@ -43,8 +43,8 @@ public class DownloadGUI extends JFrame {
         JPanel controlPanel = new JPanel(new FlowLayout());
         controlPanel.setBorder(BorderFactory.createTitledBorder("Điều Khiển Tải File"));
         
-        downloadButton = new JButton("Tải File Mặc Định (test.txt)");
-        downloadButton.setToolTipText("Tải file test.txt từ server");
+        downloadButton = new JButton("Tải File Mặc Định (test.dat)");
+        downloadButton.setToolTipText("Tải file test.dat từ server");
         controlPanel.add(downloadButton);
         
         resumeButton = new JButton("Tiếp Tục Tải");
@@ -122,8 +122,8 @@ public class DownloadGUI extends JFrame {
         add(progressPanel, BorderLayout.SOUTH);
 
         // Event handlers
-        downloadButton.addActionListener(e -> startDownload("test.txt"));
-        resumeButton.addActionListener(e -> resumeDownload("test.txt"));
+        downloadButton.addActionListener(e -> startDownload("test.dat"));
+        resumeButton.addActionListener(e -> resumeDownload("test.dat"));
         listButton.addActionListener(e -> fetchFileList());
         downloadSelectedButton.addActionListener(e -> downloadSelectedFile());
 
@@ -397,7 +397,7 @@ public class DownloadGUI extends JFrame {
     private void cleanupOldFiles() {
         try {
             // Xóa các file đã tải trước đó
-            String[] filesToClean = {"test.txt", "sample.txt", "downloaded_file.txt"};
+            String[] filesToClean = {"test.dat", "sample.dat", "downloaded_file.dat"};
             for (String fileName : filesToClean) {
                 File file = new File(fileName);
                 if (file.exists()) {
@@ -408,8 +408,8 @@ public class DownloadGUI extends JFrame {
             }
             
             // Xóa progress trong database
-            DBUtils.clearProgress("test.txt");
-            DBUtils.clearProgress("sample.txt");
+            DBUtils.clearProgress("test.dat");
+            DBUtils.clearProgress("sample.dat");
             
             System.out.println("✓ Đã dọn dẹp file cũ và progress");
             

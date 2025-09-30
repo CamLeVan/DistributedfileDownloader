@@ -17,7 +17,7 @@ public class ConfigLoader {
                 System.err.println("Warning: Could not find " + CONFIG_FILE + ", using default values");
                 properties.setProperty("servers", "localhost:12347,localhost:12348");
                 properties.setProperty("expected_hash", "3fad459e0dbaaea15a0845d18fbcc27fdb1ae83e64b6f2b4f78c12eae43f7a00");
-                properties.setProperty("file_path", "test.txt");
+                properties.setProperty("file_path", "test.dat");
                 properties.setProperty("master_server", "localhost:12347");
                 properties.setProperty("db_path", "files.db");
             }
@@ -25,7 +25,7 @@ public class ConfigLoader {
             System.err.println("Failed to load config file: " + e.getMessage());
             properties.setProperty("servers", "localhost:12347,localhost:12348");
             properties.setProperty("expected_hash", "3fad459e0dbaaea15a0845d18fbcc27fdb1ae83e64b6f2b4f78c12eae43f7a00");
-            properties.setProperty("file_path", "test.txt");
+            properties.setProperty("file_path", "test.dat");
             properties.setProperty("master_server", "localhost:12347");
             properties.setProperty("db_path", "files.db");
         }
@@ -49,7 +49,7 @@ public class ConfigLoader {
     }
 
     public static String getFilePath() {
-        return properties.getProperty("file_path", "test.txt");
+        return properties.getProperty("file_path", "test.dat");
     }
 
     // FIXED: Default an toàn nếu servers rỗng
