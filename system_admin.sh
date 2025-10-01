@@ -31,17 +31,7 @@ backup_files() {
 # Function to clean temporary files
 clean_temp() {
     echo "Cleaning temporary files..."
-    find /tmp -type f -mtime +7 -delete
-    find /var/tmp -type f -mtime +7 -delete
-}
-
-# Function to update system packages
-update_system() {
-    echo "Updating system packages..."
-    apt update && apt upgrade -y
-}
-
-# Function to check network connectivity
+    find ity
 check_network() {
     echo "Checking network connectivity..."
     ping -c 3 google.com
@@ -67,4 +57,15 @@ optimize_system() {
     echo 3 > /proc/sys/vm/drop_caches
 }
 
-# Main 
+# Main execution
+main() {
+    echo "System Administration Script"
+    echo "============================"
+    
+    check_disk_usage
+    check_memory_usage
+    check_processes
+    check_network
+    check_security
+    
+    read -p "Do you want to perform

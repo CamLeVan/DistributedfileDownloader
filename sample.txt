@@ -1,0 +1,1 @@
+﻿This is a sample file for testing distributed download functionality. It contains multiple lines of text to simulate a larger file that can be split into chunks and downloaded from multiple servers simultaneously. The content should be long enough to test the chunking algorithm and concurrent download capabilities of our distributed file downloader system.

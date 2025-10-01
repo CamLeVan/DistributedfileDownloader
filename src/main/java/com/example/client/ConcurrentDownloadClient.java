@@ -95,6 +95,11 @@ public class ConcurrentDownloadClient {
                     DownloadGUI.log("Resume: " + fileName + " đã hoàn chỉnh, skip.");
                     DBUtils.clearProgress(fileName);  // Clear sau success
                     return;
+                } else {
+                    System.err.println("Resume: File " + fileName + " corrupted (hash mismatch). Deleting and restarting.");
+                    DownloadGUI.log("Resume: File " + fileName + " bị hỏng (hash không khớp), xóa và tải lại.");
+                    outputFile.delete(); // Xóa file lỗi
+                    progress.clear(); // Xóa tiến độ để bắt đầu lại
                 }
             }
             // Partial: Adjust - assume sequential chunks, skip done chunks
